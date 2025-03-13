@@ -129,6 +129,7 @@ const initializeSocket = (server) => {
             }
         });
 
+
         io.on('connection', (socket) => {
             console.log(`Usuario ${socket.userId} conectado${socket.user.isAgente ? ' (Agente)' : ''}`);
 
@@ -137,6 +138,7 @@ const initializeSocket = (server) => {
             
             // Enviar notificaciones pendientes al usuario
             enviarNotificacionesPendientes(socket.userId);
+            db.query('UPDATE usuario SET online=1 WHERE id=?',[socket.userId])
 
             // Escuchar eventos de notificaciones
             socket.on('mark_notification_read', async (notificationId) => {
@@ -262,6 +264,7 @@ const initializeSocket = (server) => {
             socket.on('disconnect', () => {
                 console.log(`Usuario ${socket.userId} desconectado${socket.user.isAgente ? ' (Agente)' : ''}`);
                 // Si es agente, actualizar su estado a offline
+                db.query('UPDATE usuario SET online =0 WHERE id =?',[socket.userId])
                 if (socket.user.isAgente && socket.user.agenteId) {
                     db.query(
                         'UPDATE support_agent SET estado = "offline" WHERE id = ?',
