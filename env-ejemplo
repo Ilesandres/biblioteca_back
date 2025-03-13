@@ -1,0 +1,11 @@
+DB_NAME=biblioteca
+DB_USER=root
+DB_PASSWORD=
+DB_HOST=localhost
+PORT=3005
+JWT_SECRET=tu_clave_secreta_muy_segura
+NODE_ENV=development
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+CLOUDINARY_BOOK_FOLDER=book-covers
