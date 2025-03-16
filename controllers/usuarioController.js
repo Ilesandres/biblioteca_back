@@ -250,6 +250,90 @@ const logoutUsuario = async (req, res) => {
     }
 };
 
+// Actualizar foto de perfil
+const actualizarFotoPerfil = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No se ha proporcionado ninguna imagen' });
+        }
+
+        const imageBuffer = req.file.buffer;
+
+        // Actualizar la foto de perfil en la base de datos
+        await pool.query(
+            'UPDATE usuario SET profilePhoto = ? WHERE id = ?',
+            [imageBuffer, req.user.id]
+        );
+
+        res.json({
+            success: true,
+            message: '¡Foto de perfil actualizada exitosamente!'
+        });
+    } catch (err) {
+        console.error('Error al actualizar foto de perfil:', err);
+        res.status(400).json({ error: err.message });
+    }
+};
+
+// Actualizar foto de perfil por ID (solo para administradores)
+const actualizarFotoPerfilPorId = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No se ha proporcionado ninguna imagen' });
+        }
+
+        const userId = req.params.id;
+        const imageBuffer = req.file.buffer;
+
+        // Verificar si el usuario existe
+        const [usuario] = await pool.query('SELECT id FROM usuario WHERE id = ?', [userId]);
+        if (usuario.length === 0) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+
+        // Verificar si el usuario que hace la solicitud es administrador
+        if (!req.user.isAdmin) {
+            return res.status(403).json({ error: 'No tienes permisos para realizar esta acción' });
+        }
+
+        // Actualizar la foto de perfil en la base de datos
+        await pool.query(
+            'UPDATE usuario SET profilePhoto = ? WHERE id = ?',
+            [imageBuffer, userId]
+        );
+
+        res.json({
+            success: true,
+            message: '¡Foto de perfil actualizada exitosamente!'
+        });
+    } catch (err) {
+        console.error('Error al actualizar foto de perfil:', err);
+        res.status(500).json({ error: 'Error al actualizar la foto de perfil' });
+    }
+};
+
+// Obtener foto de perfil por ID
+const getProfilePhoto = async (req, res) => {
+    try {
+        const userId = req.params.id;
+
+        const [result] = await pool.query(
+            'SELECT profilePhoto FROM usuario WHERE id = ?',
+            [userId]
+        );
+
+        if (result.length === 0 || !result[0].profilePhoto) {
+            return res.status(404).json({ error: 'Foto de perfil no encontrada' });
+        }
+
+        res.setHeader('Content-Type', 'image/jpeg');
+        res.send(result[0].profilePhoto);
+    } catch (err) {
+        console.error('Error al obtener foto de perfil:', err);
+        res.status(500).json({ error: 'Error al obtener la foto de perfil' });
+    }
+};
+
 module.exports = {
     registrarUsuario,
     loginUsuario,
@@ -257,5 +341,8 @@ module.exports = {
     actualizarPerfil,
     obtenerHistorialPrestamos,
     getStats,
-    logoutUsuario
+    logoutUsuario,
+    actualizarFotoPerfil,
+    actualizarFotoPerfilPorId,
+    getProfilePhoto
 };

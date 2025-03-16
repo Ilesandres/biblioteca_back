@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS usuario (
     nombre VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     PASSWORD VARCHAR(255) NOT NULL,
+    profilePhoto MEDIUMBLOB,
     rol ENUM('admin', 'usuario') DEFAULT 'usuario',
     online BOOLEAN DEFAULT FALSE,
     lastSeen TIMESTAMP NULL,
