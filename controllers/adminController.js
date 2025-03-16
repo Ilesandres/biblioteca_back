@@ -186,32 +186,162 @@ const exportData = async (req, res) => {
 
             case 'pdf':
                 const PDFDocument = require('pdfkit');
-                const doc = new PDFDocument();
+                const doc = new PDFDocument({
+                    size: 'A4',
+                    layout: 'landscape',
+                    info: {
+                        Title: 'Biblioteca Export',
+                        Author: 'Sistema Biblioteca',
+                        Subject: 'Exportación de datos'
+                    },
+                    autoFirstPage: true,
+                    lang: 'es-ES'
+                });
 
+                // Configurar fuente con soporte completo para caracteres latinos
+                doc.font('fonts/Iansui-Regular.ttf');
+                doc.fontSize(12);
+                
+                // Asegurar que el texto se codifique correctamente
+                const textEncoder = new TextEncoder('utf-8');
+                
                 res.setHeader('Content-Type', 'application/pdf');
                 res.setHeader('Content-Disposition', 'attachment; filename=biblioteca_export.pdf');
 
-                doc.pipe(res);
+                // Manejar errores del stream
+                doc.on('error', (err) => {
+                    console.error('Error al generar PDF:', err);
+                    if (!res.headersSent) {
+                        res.status(500).json({ error: 'Error al generar el PDF' });
+                    }
+                });
 
-                // Add content to PDF
+                // Pipe al response con manejo de errores
+                doc.pipe(res).on('error', (err) => {
+                    console.error('Error en el stream de respuesta:', err);
+                    if (!res.headersSent) {
+                        res.status(500).json({ error: 'Error al enviar el PDF' });
+                    }
+                });
+
+                // Función para sanitizar y codificar texto
+                const sanitizeText = (text) => {
+                    if (text === null || text === undefined) return '';
+                    return String(text)
+                        .replace(/[\x00-\x1F\x7F-\x9F]/g, '') // Eliminar caracteres de control
+                        .normalize('NFC') // Normalizar caracteres especiales manteniendo acentos
+                        .replace(/[^\p{L}\p{N}\p{P}\p{Z}]/gu, '') // Mantener letras, números, puntuación y espacios
+                        .trim();
+                };
+
+                // Función para crear tabla
+                const createTable = (doc, headers, data, startX, startY, options) => {
+                    const cellPadding = 5;
+                    const cellWidth = (doc.page.width - 2 * startX - cellPadding * 2) / headers.length;
+                    const minLineHeight = 20;
+
+                    // Dibujar encabezados
+                    doc.fontSize(10);
+                    let headerHeight = minLineHeight;
+                    headers.forEach((header, i) => {
+                        const textHeight = doc.heightOfString(sanitizeText(header), {
+                            width: cellWidth - 2 * cellPadding
+                        });
+                        headerHeight = Math.max(headerHeight, textHeight + 2 * cellPadding);
+                    });
+
+                    headers.forEach((header, i) => {
+                        doc.fillColor('black')
+                           .rect(startX + i * cellWidth, startY, cellWidth, headerHeight)
+                           .fill();
+                        doc.fillColor('white')
+                           .text(sanitizeText(header),
+                                startX + i * cellWidth + cellPadding,
+                                startY + cellPadding,
+                                { width: cellWidth - 2 * cellPadding,
+                                  align: 'left',
+                                  lineGap: 2 });
+                    });
+
+                    // Dibujar datos
+                    let currentY = startY + headerHeight;
+                    data.forEach((row, rowIndex) => {
+                        if (currentY > doc.page.height - 100) {
+                            doc.addPage();
+                            currentY = 50;
+                        }
+
+                        // Calcular altura máxima necesaria para esta fila
+                        let rowHeight = minLineHeight;
+                        headers.forEach((header) => {
+                            const text = sanitizeText(row[header]);
+                            const textHeight = doc.heightOfString(text, {
+                                width: cellWidth - 2 * cellPadding
+                            });
+                            rowHeight = Math.max(rowHeight, textHeight + 2 * cellPadding);
+                        });
+
+                        // Dibujar celdas con la altura calculada
+                        headers.forEach((header, i) => {
+                            const text = sanitizeText(row[header]);
+                            doc.fillColor(rowIndex % 2 === 0 ? '#f5f5f5' : 'white')
+                               .rect(startX + i * cellWidth, currentY, cellWidth, rowHeight)
+                               .fill();
+                            doc.fillColor('black')
+                               .text(text,
+                                    startX + i * cellWidth + cellPadding,
+                                    currentY + cellPadding,
+                                    { width: cellWidth - 2 * cellPadding,
+                                      align: 'left',
+                                      lineGap: 2 });
+                        });
+                        currentY += rowHeight;
+                    });
+                };
+
+                // Agregar contenido al PDF
                 Object.entries(exportedData).forEach(([key, data]) => {
-                    if (!Array.isArray(data)) return;
-                    doc.fontSize(16).text(key.toUpperCase(), { underline: true });
+                    if (!Array.isArray(data) || data.length === 0) return;
+
+                    // Título de la sección
+                    doc.fontSize(16)
+                       .fillColor('black')
+                       .text(key.toUpperCase(), 50, 50, { 
+                           underline: true,
+                           characterSpacing: 0.5,
+                           wordSpacing: 0.5
+                       });
                     doc.moveDown();
 
                     if (data.length > 0) {
-                        const headers = Object.keys(data[0]);
-                        doc.fontSize(12).text(headers.join('\t'));
-                        doc.moveDown();
-
-                        data.forEach(item => {
-                            doc.fontSize(10).text(
-                                headers.map(header => item[header]).join('\t')
-                            );
+                        // Definir el orden deseado de las columnas
+                        const priorityFields = ['id','titulo','autor','calificacion_promedio', 'createdAt', 'updatedAt'];
+                        const headers = [
+                            ...priorityFields.filter(field => Object.keys(data[0]).includes(field)),
+                            ...Object.keys(data[0]).filter(key => !priorityFields.includes(key))
+                        ];
+                        // Asegurar que los datos se codifiquen correctamente
+                        const processedData = data.map(row => {
+                            const newRow = {};
+                            Object.entries(row).forEach(([key, value]) => {
+                                newRow[key] = value ? value.toString() : '';
+                            });
+                            return newRow;
                         });
+                        
+                        createTable(doc, headers, processedData, 50, doc.y, {
+                            width: doc.page.width - 100,
+                            padding: 5,
+                            lineHeight: 1.2
+                        });
+                        
+                        // Agregar tres saltos de línea después de cada tabla
+                        doc.moveDown(3);
                     }
+
                     doc.addPage();
                 });
+
 
                 doc.end();
                 break;
