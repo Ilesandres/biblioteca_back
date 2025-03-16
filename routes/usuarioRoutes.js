@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const { protegerRuta } = require('../middlewares/auth');
 const { validarRegistro } = require('../middlewares/validator');
+const profileUploadMiddleware = require('../middlewares/profileUpload');
 const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
 const {
@@ -11,7 +12,10 @@ const {
     actualizarPerfil,
     obtenerHistorialPrestamos,
     getStats,
-    logoutUsuario
+    logoutUsuario,
+    actualizarFotoPerfil,
+    getProfilePhoto,
+    actualizarFotoPerfilPorId
 } = require('../controllers/usuarioController');
 
 const router = express.Router();
@@ -42,6 +46,34 @@ const router = express.Router();
  *         description: No autorizado
  */
 router.get('/stats', protegerRuta, getStats);
+
+/**
+ * @swagger
+ * /usuarios/profile-photo:
+ *   post:
+ *     summary: Actualiza la foto de perfil del usuario
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               profilePhoto:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Foto de perfil actualizada exitosamente
+ *       400:
+ *         description: Error en la solicitud
+ *       401:
+ *         description: No autorizado
+ */
+router.post('/profile-photo', protegerRuta, profileUploadMiddleware, actualizarFotoPerfil);
 
 /**
  * @swagger
@@ -265,6 +297,12 @@ router.post('/login', loginUsuario);
 router.get('/perfil', protegerRuta, obtenerPerfil);
 router.put('/perfil', protegerRuta, actualizarPerfil);
 router.get('/prestamos', protegerRuta, obtenerHistorialPrestamos);
+
+// Ruta para obtener foto de perfil por ID
+router.get('/foto/:id', getProfilePhoto);
+
+// Ruta para actualizar foto de perfil por ID (solo administradores)
+router.post('/foto/:id', profileUploadMiddleware, actualizarFotoPerfilPorId);
 
 // Legacy route for backward compatibility
 router.post('/registro', validarRegistro, registrarUsuario);
