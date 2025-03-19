@@ -127,6 +127,7 @@ class DataService {
                         [book['id'], book['Título'], book['Autor'], book['Editorial'],book['Año de Publicación'], book['imagen'], book['Descripción'], book['Stock']]
                     );
                     if(book['Categorías']){
+                        const insertId=query[0].insertId;
                         console.log('insertId: ', insertId)
                             await connection.query(
                                 'INSERT IGNORE INTO librocategoria (libroId, categoriaId) VALUES (?,?)',
