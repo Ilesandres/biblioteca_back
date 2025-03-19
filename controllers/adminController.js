@@ -421,7 +421,7 @@ const importData = async (req, res) => {
         }
 
         const file = req.file;
-        
+        console.log(req.body);
         // Validate and parse entities
         let entities = [];
         try {
