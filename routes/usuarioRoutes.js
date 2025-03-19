@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const { protegerRuta } = require('../middlewares/auth');
+const { googleLogin, googleRegister } = require('../controllers/googleAuthController');
 const { validarRegistro } = require('../middlewares/validator');
 const profileUploadMiddleware = require('../middlewares/profileUpload');
 const jwt = require('jsonwebtoken');
@@ -19,6 +20,11 @@ const {
 } = require('../controllers/usuarioController');
 
 const router = express.Router();
+
+// Rutas de autenticación con Google
+router.post('/google/login', googleLogin);
+router.post('/google/register', googleRegister);
+
 
 /**
  * @swagger
@@ -322,5 +328,9 @@ router.post('/registro', validarRegistro, registrarUsuario);
  *         description: Error al cerrar sesión
  */
 router.post('/logout', protegerRuta, logoutUsuario);
+
+// Rutas de autenticación con Google
+router.post('/google-login', googleLogin);
+router.post('/google-register', googleRegister);
 
 module.exports = router;
