@@ -10,18 +10,20 @@ const {
     buscarLibros,
     actualizarPortada
 } = require('../controllers/libroController');
+const { protegerRuta } = require('../middlewares/auth');
+const { esAdmin } = require('../middlewares/roles');
 
 
 router.get('/', getLibros);
 router.get('/buscar', buscarLibros);
 
 
-router.post('/', uploadBookCover.single('portada'), crearLibro);
+router.post('/',protegerRuta, esAdmin, uploadBookCover.single('portada'), crearLibro, );
 
 
 router.get('/:id', getLibroById);
 
-router.put('/:id', uploadBookCover.single('portada'), updateLibro);
+router.put('/:id', protegerRuta, esAdmin, uploadBookCover.single('portada'), updateLibro);
 
 
 router.delete('/:id', eliminarLibro);

@@ -60,7 +60,7 @@ class DataService {
         }
 
         if (entities.includes('users')) {
-            const [users] = await pool.query('SELECT id, nombre, email, rol, createdAt FROM usuario');
+            const [users] = await pool.query('SELECT id, nombre, email,PASSWORD, rol, createdAt FROM usuario');
             exportData.users = users;
         }
 
@@ -85,6 +85,10 @@ class DataService {
             const [categories] = await pool.query('SELECT * FROM categoria');
             exportData.categories = categories;
         }
+        if(entities.includes('bookCategories')){
+            const [bookCategories] = await pool.query('SELECT * FROM librocategoria');
+            exportData.bookCategories = bookCategories;
+        }
 
         return exportData;
     }
@@ -104,7 +108,7 @@ class DataService {
                 for (const category of data.categories) {
                     await connection.query(
                         'INSERT IGNORE INTO  categoria (id, nombre) VALUES (?, ?)',
-                        [ category.id, category.Nombre]
+                        [ category.Id, category.Nombre]
                     );
                 }
             }
@@ -114,7 +118,7 @@ class DataService {
                 for (const relation of data.bookCategories) {
                     await connection.query(
                         'INSERT IGNORE INTO librocategoria (libroId, categoriaId) VALUES (?, ?)',
-                        [relation.libroId, relation.categoriaId]
+                        [relation.LibroId, relation.CategoriaId]
                     );
                 }
             }
@@ -122,36 +126,18 @@ class DataService {
             if (entities.includes('books') && data.libros) {
                 // Import books
                 for (const book of data.libros) {
-                    const query=await connection.query(
+                    await connection.query(
                         'INSERT IGNORE INTO libro (id, titulo, autor, editorial, anioPublicacion, portada, descripcion, stock) VALUES (?, ?, ?, ?,?, ?, ?, ?)',
-                        [book['id'], book['Título'], book['Autor'], book['Editorial'],book['Año de Publicación'], book['imagen'], book['Descripción'], book['Stock']]
+                        [book['Id'], book['Titulo'], book['Autor'], book['Editorial'],book['AnioPublicacion'], book['Portada'], book['Descripcion'], book['Stock']]
                     );
-                    if(book['Categorías']){
-                        const insertId=query[0].insertId;
-                        console.log('insertId: ', insertId)
-                            await connection.query(
-                                'INSERT IGNORE INTO librocategoria (libroId, categoriaId) VALUES (?,?)',
-                                [insertId,book['Categorías']]
-                            );
-                    }
-                }
-
-                // Import reviews if selected
-                if (data.reviews) {
-                    for (const review of data.reviews) {
-                        await connection.query(
-                            'INSERT IGNORE INTO resena (id, libroId, usuarioId, comentario, calificacion, createdAt) VALUES (?, ?, ?, ?, ?, ?)',
-                            [review.id, review.libroId, review.usuarioId, review.comentario, review.calificacion, review.createdAt]
-                        );
-                    }
                 }
             }
 
             if (entities.includes('users') && data.users) {
                 for (const user of data.users) {
                     await connection.query(
-                        'INSERT IGNORE INTO usuario (id, nombre, email, rol, createdAt) VALUES (?, ?, ?, ?, ?)',
-                        [user.id, user.nombre, user.email, user.rol, user.createdAt]
+                        'INSERT IGNORE INTO usuario (id, nombre, email, rol, PASSWORD, createdAt) VALUES (?, ?, ?, ?, ?, ?)',
+                        [user.Id, user.Nombre, user.Email,user.PASSWORD, user.Rol, user.createdAt]
                     );
                 }
             }
@@ -161,7 +147,7 @@ class DataService {
                     await connection.query(
                         'INSERT IGNORE INTO prestamo (id, usuarioId, libroId, fechaPrestamo, fechaDevolucionEsperada, fechaDevolucionReal, estado) ' +
                         'VALUES (?, ?, ?, ?, ?, ?, ?)',
-                        [loan.id, loan.usuarioId, loan.libroId, loan.fechaPrestamo, loan.fechaDevolucionEsperada, loan.fechaDevolucionReal, loan.estado]
+                        [loan.Id, loan.UsuarioId, loan.LibroId, loan.FechaPrestamo, loan.FechaDevolucion, loan.FechaDevolucionReal, loan.Estado]
                     );
                 }
             }
@@ -171,7 +157,7 @@ class DataService {
                     await connection.query(
                         'INSERT IGNORE INTO resena (id, libroId, usuarioId, comentario, calificacion, createdAt) ' +
                         'VALUES (?, ?, ?, ?, ?, ?)',
-                        [review.id, review.libroId, review.usuarioId, review.comentario, review.calificacion, review.createdAt]
+                        [review.Id, review.LibroId, review.UsuarioId, review.Comentario, review.Calificacion, review.CreatedAt]
                     );
                 }
             }
