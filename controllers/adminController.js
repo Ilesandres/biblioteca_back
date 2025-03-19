@@ -501,108 +501,22 @@ const importData = async (req, res) => {
 };
 
 // Generar plantilla para importación
+const templateService = require('../services/templateService');
+
 const generateTemplate = async (req, res) => {
     try {
         const { entity } = req.query;
+        console.log('entidad ', entity)
         if (!entity) {
             return res.status(400).json({ error: 'Debe especificar el tipo de entidad' });
         }
 
-        const workbook = new ExcelJS.Workbook();
-        let worksheet;
+        const result = await templateService.generateTemplateFile(entity);
+        
+        res.setHeader('Content-Type', result.contentType);
+        res.setHeader('Content-Disposition', `attachment; filename=${result.filename}`);
+        res.send(result.buffer);
 
-        switch (entity.toLowerCase()) {
-            case 'books':
-            case 'libros':
-                worksheet = workbook.addWorksheet('Libros');
-                worksheet.columns = [
-                    { header: 'Título', key: 'titulo', width: 30 },
-                    { header: 'Autor', key: 'autor', width: 25 },
-                    { header: 'ISBN', key: 'isbn', width: 15 },
-                    { header: 'Editorial', key: 'editorial', width: 20 },
-                    { header: 'Año de Publicación', key: 'anioPublicacion', width: 15 },
-                    { header: 'Categorías', key: 'categorias', width: 20 },
-                    { header: 'Descripción', key: 'descripcion', width: 40 },
-                    { header: 'Stock', key: 'stock', width: 10 }
-                ];
-                break;
-
-            case 'users':
-            case 'usuarios':
-                worksheet = workbook.addWorksheet('Usuarios');
-                worksheet.columns = [
-                    { header: 'Nombre', key: 'nombre', width: 30 },
-                    { header: 'Email', key: 'email', width: 30 },
-                    { header: 'Rol', key: 'rol', width: 15 },
-                    { header: 'Teléfono', key: 'telefono', width: 15 }
-                ];
-                break;
-
-            case 'loans':
-            case 'prestamos':
-                worksheet = workbook.addWorksheet('Préstamos');
-                worksheet.columns = [
-                    { header: 'ID Usuario', key: 'usuarioId', width: 15 },
-                    { header: 'ID Libro', key: 'libroId', width: 15 },
-                    { header: 'Fecha Préstamo', key: 'fechaPrestamo', width: 20 },
-                    { header: 'Fecha Devolución Prevista', key: 'fechaDevolucionPrevista', width: 20 },
-                    { header: 'Estado', key: 'estado', width: 15 }
-                ];
-                break;
-
-            case 'reviews':
-            case 'resenas':
-                worksheet = workbook.addWorksheet('Reseñas');
-                worksheet.columns = [
-                    { header: 'ID Usuario', key: 'usuarioId', width: 15 },
-                    { header: 'ID Libro', key: 'libroId', width: 15 },
-                    { header: 'Calificación', key: 'calificacion', width: 15 },
-                    { header: 'Comentario', key: 'comentario', width: 40 }
-                ];
-                break;
-
-            case 'categories':
-            case 'categorias':
-                worksheet = workbook.addWorksheet('Categorías');
-                worksheet.columns = [
-                    { header: 'Nombre', key: 'nombre', width: 30 },
-                    { header: 'Descripción', key: 'descripcion', width: 50 }
-                ];
-                break;
-
-            case 'bookcategories':
-            case 'librocategoria':
-                worksheet = workbook.addWorksheet('Libro-Categoría');
-                worksheet.columns = [
-                    { header: 'ID Libro', key: 'libroId', width: 15 },
-                    { header: 'ID Categoría', key: 'categoriaId', width: 15 }
-                ];
-                break;
-
-            default:
-                return res.status(400).json({ error: 'Tipo de entidad no válido' });
-        }
-
-        // Aplicar estilos a la cabecera
-        worksheet.getRow(1).font = { bold: true };
-        worksheet.getRow(1).fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FFE0E0E0' }
-        };
-
-        // Configurar el archivo para descarga
-        res.setHeader(
-            'Content-Type',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        );
-        res.setHeader(
-            'Content-Disposition',
-            `attachment; filename=plantilla_${entity.toLowerCase()}.xlsx`
-        );
-
-        await workbook.xlsx.write(res);
-        res.end();
     } catch (error) {
         console.error('Error al generar la plantilla:', error);
         res.status(500).json({ error: 'Error al generar la plantilla' });
