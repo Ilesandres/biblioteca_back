@@ -14,6 +14,10 @@ const options = {
                 url: process.env.API_URL || 'http://localhost:3005/api',
                 description: 'Servidor de desarrollo'
             },
+            {
+                url: 'https://biblioteca-back-wyy2.onrender.com',
+                description: 'Servidor de producción'
+            }
         ],
         components: {
             securitySchemes: {

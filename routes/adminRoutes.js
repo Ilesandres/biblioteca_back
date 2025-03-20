@@ -21,6 +21,18 @@ const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
         fileSize: 5 * 1024 * 1024 // 5MB limit
+    },
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = [
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // XLSX
+            'application/vnd.ms-excel' // XLS
+        ];
+
+        if (!allowedTypes.includes(file.mimetype)) {
+            return cb(new Error('Tipo de archivo no permitido. Solo se permiten archivos Excel (.xls, .xlsx).'), false);
+        }
+
+        cb(null, true);
     }
 });
 
