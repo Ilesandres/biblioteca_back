@@ -127,8 +127,8 @@ class DataService {
                 // Import books
                 for (const book of data.libros) {
                     await connection.query(
-                        'INSERT IGNORE INTO libro (id, titulo, autor, editorial, anioPublicacion, portada, descripcion, stock) VALUES (?, ?, ?, ?,?, ?, ?, ?)',
-                        [book['Id'], book['Titulo'], book['Autor'], book['Editorial'],book['AnioPublicacion'], book['Portada'], book['Descripcion'], book['Stock']]
+                        'INSERT IGNORE INTO libro (id, titulo, autor, editorial, anioPublicacion, portada, descripcion, stock,isbn) VALUES (?, ?, ?, ?,?, ?, ?, ?,?)',
+                        [book['Id'], book['Titulo'], book['Autor'], book['Editorial'],book['AnioPublicacion'], book['Portada'], book['Descripcion'], book['Stock'],book['Isbn']]
                     );
                 }
             }
