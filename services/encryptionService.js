@@ -184,6 +184,81 @@ class EncryptionService {
             throw error;
         }
     }
+
+    async createDecryptStream() {
+        const { Transform } = require('stream');
+
+        // Crear un transform stream para manejar la desencriptación
+        const decryptStream = new Transform({
+            transform(chunk, encoding, callback) {
+                try {
+                    if (!this.buffer) {
+                        this.buffer = Buffer.alloc(0);
+                    }
+                    
+                    // Acumular datos en el buffer
+                    this.buffer = Buffer.concat([this.buffer, chunk]);
+
+                    // Si no tenemos suficientes datos para iniciar la desencriptación, esperar más
+                    if (!this.decipher && this.buffer.length < 12) {
+                        callback();
+                        return;
+                    }
+
+                    // Inicializar decipher si aún no está configurado
+                    if (!this.decipher) {
+                        const iv = this.buffer.slice(0, 12);
+                        this.decipher = crypto.createDecipheriv(this.algorithm, this.key, iv);
+                        this.buffer = this.buffer.slice(12);
+                    }
+
+                    // Mantener al menos 16 bytes para el authTag
+                    if (this.buffer.length > 16) {
+                        const processLength = this.buffer.length - 16;
+                        const dataToProcess = this.buffer.slice(0, processLength);
+                        this.buffer = this.buffer.slice(processLength);
+
+                        if (dataToProcess.length > 0) {
+                            const decrypted = this.decipher.update(dataToProcess);
+                            this.push(decrypted);
+                        }
+                    }
+
+                    callback();
+                } catch (error) {
+                    callback(error);
+                }
+            },
+            flush(callback) {
+                try {
+                    if (this.decipher && this.buffer.length >= 16) {
+                        // Configurar authTag y procesar los últimos datos
+                        const authTag = this.buffer.slice(-16);
+                        this.decipher.setAuthTag(authTag);
+                        
+                        if (this.buffer.length > 16) {
+                            const finalData = this.buffer.slice(0, -16);
+                            const decrypted = this.decipher.update(finalData);
+                            this.push(decrypted);
+                        }
+                        
+                        const final = this.decipher.final();
+                        this.push(final);
+                    }
+                    callback();
+                } catch (error) {
+                    callback(error);
+                }
+            }
+        });
+
+
+        // Vincular el contexto de EncryptionService al transform stream
+        decryptStream.algorithm = this.algorithm;
+        decryptStream.key = this.key;
+
+        return decryptStream;
+    }
 }
 
 module.exports = EncryptionService;

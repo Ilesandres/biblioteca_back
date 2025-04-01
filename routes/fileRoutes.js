@@ -22,4 +22,6 @@ router.get('/list', fileController.listFiles.bind(fileController));
 
 router.get('/', fileController.listAllFiles.bind(fileController));
 
-module.exports = router; 
+router.get('/view/:fileId', fileController.viewFile.bind(fileController));
+
+module.exports = router;

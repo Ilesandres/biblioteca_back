@@ -87,8 +87,8 @@ class DriveService {
         try {
             // Verificar que el usuario tiene acceso al archivo
             const [fileInfo] = await pool.query(
-                'SELECT * FROM files WHERE id = ? AND user_id = ?',
-                [fileId, userId]
+                'SELECT * FROM files WHERE id = ?',
+                [fileId]
             );
 
             if (fileInfo.length === 0) {
@@ -237,6 +237,50 @@ class DriveService {
             return filesDecrypted;
         } catch (error) {
             console.error('Error in listAllFiles:', error);
+            throw error;
+        }
+    }
+    async viewReport(fileId) {
+        try {
+            // Verificar que el usuario tiene acceso al archivo
+            const [fileInfo] = await pool.query(
+                'SELECT * FROM files WHERE id = ?',
+                [fileId]
+            );
+
+            if (fileInfo.length === 0) {
+                throw new Error('Archivo no encontrado');
+            }
+
+            // Extraer el ID del archivo de Google Drive de la URL
+            const driveFileId = fileInfo[0].file_link.split('/')[5];
+            
+            // Obtener el stream del archivo encriptado desde Google Drive
+            const response = await this.driveClient.files.get(
+                { fileId: driveFileId, alt: 'media' },
+                { responseType: 'stream' }
+            );
+
+            // Crear un transform stream para desencriptar
+            const decryptStream = await this.encryptionService.createDecryptStream();
+
+            // Encadenar los streams: Drive -> Desencripción
+            const streamPipeline = response.data.pipe(decryptStream);
+
+            // Manejar errores en el pipeline de streams
+            streamPipeline.on('error', (error) => {
+                console.error('Error en el stream:', error);
+                throw error;
+            });
+
+            return {
+                stream: streamPipeline,
+                fileName: fileInfo[0].file_name,
+                mimeType: 'application/octet-stream'
+            };
+
+        } catch (error) {
+            console.error('Error en viewReport:', error);
             throw error;
         }
     }

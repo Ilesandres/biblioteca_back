@@ -14,7 +14,7 @@ const { protegerRuta } = require('../middlewares/auth');
 const { esAdmin } = require('../middlewares/roles');
 
 
-router.get('/', getLibros);
+router.get('/', protegerRuta, getLibros);
 router.get('/buscar', buscarLibros);
 
 
