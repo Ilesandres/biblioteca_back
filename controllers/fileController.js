@@ -36,6 +36,23 @@ class FileController {
         }
     }
 
+    async viewFile(req,res){
+        try {
+            const { fileId } = req.params;
+            const file = await driveService.viewReport(fileId);
+            
+            // Configurar headers para visualización en el navegador
+            res.setHeader('Content-Type', file.mimeType);
+            res.setHeader('Content-Disposition', `inline; filename="${file.fileName}"`);
+            
+            // Transmitir el archivo desencriptado directamente al cliente
+            file.stream.pipe(res);
+        } catch (error) {
+            console.error('Error al visualizar archivo:', error);
+            res.status(500).json({ error: 'Error al visualizar el archivo' });
+        }
+    }
+
     async deleteFile(req, res) {
         try {
             const { fileId } = req.params;
@@ -62,9 +79,9 @@ class FileController {
             res.json(files);
         } catch (error) {
             console.error('Error al listar todos los archivos:', error);
-            res.status(500).json({ error: 'Error al obtener la lista de todos los archivos' });
+            res.status(500).json({ error: 'Error al obtener la lista de todos los archivos '+error });
         }
     }
 }
 
-module.exports = new FileController(); 
+module.exports = new FileController();

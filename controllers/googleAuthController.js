@@ -69,6 +69,7 @@ const googleLogin = async (req, res) => {
         console.log('Resultado de búsqueda:', { usuariosEncontrados: users.length });
 
         if (users.length === 0) {
+            console.log('Usuario no registrado. Por favor, regístrese primero.');
             return res.status(404).json({
                 error: 'Usuario no registrado. Por favor, regístrese primero.'
             });
