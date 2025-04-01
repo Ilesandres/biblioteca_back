@@ -100,14 +100,30 @@ class DataService {
         
         try {
             await connection.beginTransaction();
+            console.log('data : ',data)
 
-            if (entities.includes('categories') && data.categories) {
-                for (const category of data.categories) {
-                    await connection.query(
-                        'INSERT IGNORE INTO  categoria (id, nombre) VALUES (?, ?)',
-                        [ category.Id, category.Nombre]
-                    );
+            if (entities.includes('categories') && (data?.categories || data?.categorías)) {
+                const categoriesData = data?.categories || data?.categorías;
+                for (const category of categoriesData) {
+                    try {
+                        const categoryId = category?.id || category?.Id;
+                        const categoryName = category?.nombre || category?.Nombre;
+                        
+                        if (!categoryId || !categoryName) {
+                            console.error('Faltan datos de categoría. ID o nombre no definidos.');
+                            continue;  // O puedes decidir qué hacer si falta alguno de estos valores
+                        }
+                
+                        await connection.query(
+                            'INSERT IGNORE INTO categoria (id, nombre) VALUES (?, ?)',
+                            [categoryId, `${categoryName}`]
+                        );
+                    } catch (error) {
+                        console.error('Error al importar categoría:', error);
+                        throw new Error(`Error al importar la categoría ${category?.nombre || category?.Nombre}: ${error.message}`);
+                    }
                 }
+                
             }
 
             if (entities.includes('bookCategories')) {
