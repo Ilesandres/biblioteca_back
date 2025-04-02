@@ -1,6 +1,8 @@
 const { Socket } = require('socket.io');
 const pool = require('../config/db');
 const { enviarNotificacionesPendientes, getIO } = require('../config/socket');
+const EncryptionService = require('../services/encryptionService');
+const encryptionService = new EncryptionService();
 
 
 // Crear un nuevo préstamo
@@ -133,7 +135,12 @@ const obtenerPrestamosActivos = async (req, res) => {
              ORDER BY p.fechaPrestamo DESC`
         );
 
-        res.json(prestamos);
+        const prestamosDecrypt= prestamos.map(prestamo=>({
+            ...prestamo,
+            usuario_nombre: encryptionService.decrypt(prestamo.usuario_nombre),
+        }))
+
+        res.json(prestamos=prestamosDecrypt);
     } catch (err) {
         console.error('Error al obtener préstamos activos:', err);
         res.status(400).json({ error: err.message });
@@ -174,8 +181,12 @@ const obtenerTodosPrestamos = async (req, res) => {
              JOIN usuario u ON p.usuarioId = u.id
              ORDER BY p.fechaPrestamo DESC`
         );
-
-        res.json(prestamos);
+        const prestamosDecrypt= prestamos.map(prestamo=>({
+           ...prestamo,
+            usuario_nombre: encryptionService.decrypt(prestamo.usuario_nombre),
+        }))
+        console.log('prestamos : ',prestamosDecrypt)
+        res.json(prestamos=prestamosDecrypt);
     } catch (err) {
         console.error('Error al obtener todos los préstamos:', err);
         res.status(400).json({ error: err.message });
