@@ -53,6 +53,10 @@ const obtenerEstadisticas = async (req, res) => {
              JOIN libro l ON p.libroId = l.id 
              ORDER BY p.fechaPrestamo DESC LIMIT 5`
         );
+        const prestamosRecientesDecrypt=prestamosRecientes.map(prestamo=>({
+            ...prestamo,
+            nombreUsuario: encryptionService.decrypt(prestamo.nombreUsuario)
+        }))
 
         // Últimas reseñas
         const [ultimasResenas] = await pool.query(
@@ -63,14 +67,19 @@ const obtenerEstadisticas = async (req, res) => {
              ORDER BY r.createdAt DESC LIMIT 5`
         );
 
+        const ultimasResenasDecrypt=ultimasResenas.map(resena=>({
+            ...resena,
+            nombreUsuario: encryptionService.decrypt(resena.nombreUsuario)
+        }))
+
         res.json({
             usuarios: usuarios[0].total,
             libros: libros[0].total,
             prestamosActivos: prestamosActivos[0].total,
             prestamosTotal: prestamosTotal[0].total,
             totalResenas: totalResenas[0].total,
-            prestamosRecientes: prestamosRecientes,
-            ultimasResenas: ultimasResenas
+            prestamosRecientes: prestamosRecientesDecrypt,
+            ultimasResenas: ultimasResenasDecrypt
         });
     } catch (err) {
         console.error('Error al obtener estadísticas:', err);

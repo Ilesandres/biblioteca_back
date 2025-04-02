@@ -1,4 +1,6 @@
 const pool = require('../config/db');
+const EncryptionService = require('../services/encryptionService');
+const encryptionService = new EncryptionService();
 
 // Crear una nueva reseña
 const crearResena = async (req, res) => {
@@ -38,7 +40,7 @@ const crearResena = async (req, res) => {
     }
 };
 
-// Obtener reseñas de un libro
+
 const obtenerResenasLibro = async (req, res) => {
     try {
         const { libroId } = req.params;
@@ -57,8 +59,13 @@ const obtenerResenasLibro = async (req, res) => {
             [libroId]
         );
 
-        // Asegurar que siempre devolvemos un array, incluso si no hay reseñas
-        res.json({ resenas: resenas || [] });
+        // Desencriptar los nombres de usuario y manejar casos nulos
+        const resenasDesencriptadas = resenas.map(resena => ({
+            ...resena,
+            usuario_nombre: resena.usuario_nombre ? encryptionService.decrypt(resena.usuario_nombre) : 'anónimo'
+        }));
+
+        res.json({ resenas: resenasDesencriptadas });
     } catch (err) {
         console.error('Error al obtener reseñas:', err);
         res.status(500).json({ error: err.message, resenas: [] });
