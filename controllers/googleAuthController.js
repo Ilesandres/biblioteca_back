@@ -85,7 +85,7 @@ const googleLogin = async (req, res) => {
         
         // Determine agent status
         const isAgent = agentData.length > 0;
-        const agentId = isAgent ? agentData[0].Id : null;
+        const agentId = isAgent ? agentData[0].id : null;
         
         console.log('Estado del agente:', { isAgent, agentId });
 
@@ -106,7 +106,7 @@ const googleLogin = async (req, res) => {
                 rol: user.rol,
                 isAgente: isAgent,
                 agenteId: agentId,
-                estadoAgente: isAgent ? user.estadoAgente : null
+                estadoAgente: isAgent ? agentData.estado : null
             },
             process.env.JWT_SECRET,
             { expiresIn: '24h' }
@@ -120,7 +120,7 @@ const googleLogin = async (req, res) => {
                 rol: user.rol,
                 isAgente: isAgent,
                 agenteId: agentId,
-                estadoAgente: isAgent ? user.estadoAgente : null
+                estadoAgente: isAgent ? agentData.estado : null
             },
             token
         });
