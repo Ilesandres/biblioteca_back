@@ -1,6 +1,8 @@
 const express = require("express"); 
 const cors = require("cors");
-const { createServer } = require('http');
+const { createServer: createHttpsServer } = require('https');
+const fs = require('fs');
+const path = require('path');
 const { initializeSocket } = require('./config/socket');
 const pool = require('./config/db');
 const errorHandler = require('./middlewares/errorHandler');
@@ -20,11 +22,28 @@ const categoriaRoutes = require('./routes/categoriaRoutes');
 const supportRoutes = require('./routes/supportRoutes');
 const fileRoutes=require('./routes/fileRoutes');
 
-const app = express();
-const httpServer = createServer(app);
-const io = initializeSocket(httpServer);
+// Configuración SSL con opciones de seguridad mejoradas
+const sslOptions = {
+  key: fs.readFileSync(path.join(__dirname, 'ssl', 'cert.key')),
+  cert: fs.readFileSync(path.join(__dirname, 'ssl', 'cert.crt')),
+  minVersion: 'TLSv1.2',
+  ciphers: 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384',
+  honorCipherOrder: true,
+  requestCert: false,
+  rejectUnauthorized: false
+};
 
-app.use(cors());
+const app = express();
+const httpsServer = createHttpsServer(sslOptions, app);
+const io = initializeSocket(httpsServer);
+
+
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? 'https://tudominio.com' 
+    : ['http://localhost:3000', 'https://localhost:3000'],
+  credentials: true
+}));
 app.use(express.json());
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
@@ -43,15 +62,16 @@ app.use('/api/files', protegerRuta,esAdmin, fileRoutes);
 
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
-
+const HTTPS_PORT = process.env.HTTPS_PORT || 5443;
 
 pool.query('SELECT 1')
     .then(() => {
         console.log('Database connection successful');
-        httpServer.listen(PORT, () => {
-            console.log(`¡Servidor corriendo en http://localhost:${PORT}!`);
-            console.log(`Documentación disponible en http://localhost:${PORT}/api-docs`);
+        
+        // Iniciar servidor HTTPS
+        httpsServer.listen(HTTPS_PORT, () => {
+            console.log(`¡Servidor HTTPS corriendo en https://localhost:${HTTPS_PORT}!`);
+            console.log(`Documentación disponible en https://localhost:${HTTPS_PORT}/api-docs`);
         });
     })
     .catch(error => {

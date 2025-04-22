@@ -97,6 +97,59 @@ docker run -p 3001:3001 --env-file .env biblioteca-backend
 - Mantén el archivo .env fuera del control de versiones
 - Configura correctamente los CORS en producción
 
+## Configuración SSL
+
+### Desarrollo (Certificados Autofirmados)
+
+1. Instala mkcert:
+```bash
+# Windows (con Chocolatey)
+choco install mkcert
+
+# macOS (con Homebrew)
+brew install mkcert
+
+# Linux
+sudo apt install libnss3-tools
+sudo apt install mkcert
+```
+
+2. Configura mkcert y genera los certificados:
+```bash
+mkcert -install
+mkdir ssl
+cd ssl
+mkcert localhost
+```
+
+Esto generará dos archivos en la carpeta `ssl`:
+- `localhost.pem` (certificado)
+- `localhost-key.pem` (llave privada)
+
+3. Actualiza las variables de entorno en `.env`:
+```env
+SSL_KEY_PATH=./ssl/localhost-key.pem
+SSL_CERT_PATH=./ssl/localhost.pem
+ENABLE_HTTPS=true
+```
+
+### Producción
+
+Para producción, se recomienda:
+- Utilizar certificados SSL válidos de una Autoridad Certificadora (CA) reconocida
+- Considerar servicios como Let's Encrypt para certificados gratuitos
+- Configurar renovación automática de certificados
+- Mantener las llaves privadas seguras y nunca compartirlas
+
+### Estructura de Archivos SSL
+
+```
+biblioteca_back/
+├── ssl/
+│   ├── localhost.pem
+│   └── localhost-key.pem
+```
+
 ## Soporte
 
 Para reportar problemas o solicitar ayuda, por favor crea un issue en el repositorio.
