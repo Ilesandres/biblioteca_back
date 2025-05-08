@@ -4,3 +4,6 @@ config/client_secret_*.json
 .env
 
 #ssl data
+ssl
+ssl/server.key
+ssl/server.crt
